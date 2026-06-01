@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PixelAgency Demo - 215位AI智能体虚拟办公室</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    .header {
+      background: white;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 16px 24px;
+    }
+    .header h1 {
+      font-size: 20px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .dept-selector {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+    .dept-btn {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .dept-btn:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+    .dept-btn.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #666;
+    }
+    .canvas-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: auto;
+      max-height: 70vh;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .modal-emoji {
+      font-size: 48px;
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .modal-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .modal-desc {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .modal-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .modal-info span:first-child {
+      color: #999;
+    }
+    .demo-notice {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏢 PixelAgency Demo</h1>
+    <p>215位AI智能体虚拟办公室 - 点击智能体查看详情</p>
+  </div>
+
+  <div class="container">
+    <div class="demo-notice">
+      ⚠️ 这是 Demo 页面，展示虚拟办公室效果。完整版需要集成到 PilotDeck 中使用。
+    </div>
+
+    <div class="dept-selector" id="deptSelector"></div>
+
+    <div class="stats" id="stats">
+      <span>👥 0 人</span>
+      <span>🔥 0 工作中</span>
+      <span>🎮 0 摸鱼</span>
+      <span>😴 0 睡觉</span>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="modal" id="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-emoji" id="modalEmoji"></div>
+        <div>
+          <div class="modal-title" id="modalName"></div>
+          <div class="modal-badge" id="modalBehavior"></div>
+        </div>
+      </div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-info">
+        <span>部门</span>
+        <span id="modalDept"></span>
+      </div>
+      <div class="modal-info">
+        <span>ID</span>
+        <span id="modalId" style="font-family:monospace;font-size:12px"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 智能体数据（简化版，实际从 agent-index.json 加载）
+    const DEPT_LIST = [
+      { key: 'engineering', name: '工程部', emoji: '💻', color: '#3B82F6' },
+      { key: 'design', name: '设计部', emoji: '🎨', color: '#A855F7' },
+      { key: 'marketing', name: '营销部', emoji: '📱', color: '#EC4899' },
+      { key: 'product', name: '产品部', emoji: '📋', color: '#F59E0B' },
+      { key: 'finance', name: '金融部', emoji: '💰', color: '#10B981' },
+      { key: 'sales', name: '销售部', emoji: '💼', color: '#6366F1' },
+      { key: 'specialized', name: '专家团', emoji: '⭐', color: '#F97316' },
+      { key: 'testing', name: '测试部', emoji: '🧪', color: '#14B8A6' },
+      { key: 'support', name: '支持部', emoji: '🛠️', color: '#8B5CF6' },
+      { key: 'hr', name: '人事部', emoji: '👥', color: '#06B6D4' },
+      { key: 'legal', name: '法务部', emoji: '⚖️', color: '#64748B' },
+      { key: 'academic', name: '学术部', emoji: '📚', color: '#7C3AED' },
+      { key: 'game-development', name: '游戏开发', emoji: '🎮', color: '#EF4444' },
+      { key: 'supply-chain', name: '供应链', emoji: '📦', color: '#84CC16' },
+      { key: 'project-management', name: '项目办', emoji: '📊', color: '#0EA5E9' },
+      { key: 'paid-media', name: '投放部', emoji: '📢', color: '#D946EF' },
+      { key: 'spatial-computing', name: 'XR部', emoji: '🥽', color: '#2DD4BF' },
+    ];
+
+    const BEHAVIORS = {
+      working:  { label: '工作中', icon: '💻', color: '#22C55E', duration: [15, 45] },
+      gaming:   { label: '打游戏', icon: '🎮', color: '#F59E0B', duration: [5, 15] },
+      sleeping: { label: '睡觉中', icon: '😴', color: '#6366F1', duration: [8, 20] },
+      coffee:   { label: '喝咖啡', icon: '☕', color: '#92400E', duration: [3, 8] },
+      chatting: { label: '聊天中', icon: '💬', color: '#3B82F6', duration: [4, 12] },
+      idle:     { label: '发呆中', icon: '🫠', color: '#9CA3AF', duration: [5, 15] },
+      walking:  { label: '走动中', icon: '🚶', color: '#A855F7', duration: [2, 5] },
+    };
+
+    // 模拟智能体数据
+    function generateAgents(dept, count) {
+      const names = {
+        'engineering': ['前端工程师', '后端工程师', '全栈工程师', '架构师', 'DevOps工程师'],
+        'design': ['UI设计师', 'UX设计师', '视觉设计师', '动效设计师'],
+        'marketing': ['营销经理', '内容运营', 'SEO专员', '社媒运营'],
+        'product': ['产品经理', '需求分析师', '用户研究员'],
+        'finance': ['财务分析师', '会计', '审计师'],
+        'sales': ['销售经理', '大客户经理', '商务拓展'],
+        'specialized': ['技术顾问', 'AI专家', '安全专家'],
+        'testing': ['测试工程师', '自动化测试', '性能测试'],
+        'support': ['技术支持', '客服经理', '文档工程师'],
+        'hr': ['HR经理', '招聘专员', '培训专员'],
+        'legal': ['法务经理', '合规经理'],
+        'academic': ['研究员', '论文助手'],
+        'game-development': ['Unity工程师', '游戏策划', '游戏美术'],
+        'supply-chain': ['供应链经理', '采购经理'],
+        'project-management': ['项目经理', 'Scrum Master'],
+        'paid-media': ['投放经理', '优化师'],
+        'spatial-computing': ['VR工程师', 'AR工程师'],
+      };
+      const emojis = ['👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', '👨‍💼', '👩‍💼', '👨‍🔬', '👩‍🔬', '👨‍🏫', '👩‍🏫'];
+      const deptNames = names[dept] || ['智能体'];
+      const agents = [];
+      for (let i = 0; i < count; i++) {
+        agents.push({
+          id: `${dept}-${i}`,
+          name: deptNames[i % deptNames.length],
+          description: `这是${DEPT_LIST.find(d => d.key === dept)?.name || dept}的${deptNames[i % deptNames.length]}`,
+          emoji: emojis[i % emojis.length],
+          department: dept,
+          behavior: randomBehavior(),
+          x: 0, y: 0,
+          walkTimer: Math.random() * 300,
+          behaviorTimer: Math.random() * 200 + 100,
+        });
+      }
+      return agents;
+    }
+
+    function randomBehavior() {
+      const r = Math.random();
+      if (r < 0.45) return 'working';
+      if (r < 0.60) return 'gaming';
+      if (r < 0.72) return 'sleeping';
+      if (r < 0.82) return 'coffee';
+      if (r < 0.90) return 'chatting';
+      if (r < 0.96) return 'idle';
+      return 'walking';
+    }
+
+    // 状态
+    let currentDept = null;
+    let agents = [];
+    let selectedAgent = null;
+    let frame = 0;
+
+    // Canvas
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = 1190;
+    const H = 850;
+    canvas.width = W * 2;
+    canvas.height = H * 2;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(2, 2);
+
+    // 初始化部门选择器
+    const selector = document.getElementById('deptSelector');
+    DEPT_LIST.forEach(dept => {
+      const btn = document.createElement('button');
+      btn.className = 'dept-btn';
+      btn.textContent = `${dept.emoji} ${dept.name}`;
+      btn.onclick = () => selectDept(dept.key);
+      selector.appendChild(btn);
+    });
+
+    function selectDept(key) {
+      currentDept = key;
+      const count = Math.floor(Math.random() * 15) + 5;
+      agents = generateAgents(key, count);
+      layoutDesks();
+      document.querySelectorAll('.dept-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(DEPT_LIST.find(d => d.key === key)?.name || ''));
+      });
+    }
+
+    function layoutDesks() {
+      const cols = Math.min(Math.ceil(Math.sqrt(agents.length * 1.6)), 6);
+      const cellW = 102;
+      const cellH = 94;
+      const startX = (W - cols * cellW) / 2 + cellW / 2;
+      const baseY = 80;
+      agents.forEach((agent, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        agent.x = startX + col * cellW;
+        agent.y = baseY + row * cellH;
+      });
+    }
+
+    // 绘制办公室场景
+    function drawOffice() {
+      // 地板
+      ctx.fillStyle = '#F5F0EB';
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#E8E0D8';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < W; x += 68) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += 68) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+      // 墙
+      ctx.fillStyle = '#E8E0D8';
+      ctx.fillRect(0, 0, W, 60);
+      ctx.fillStyle = '#D4C9BE';
+      ctx.fillRect(0, 57, W, 3);
+      // 窗户
+      for (let i = 0; i < 4; i++) {
+        const wx = 100 + i * 240;
+        ctx.fillStyle = '#BFDBFE';
+        ctx.fillRect(wx, 10, 136, 40);
+        ctx.strokeStyle = '#93C5FD';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(wx, 10, 136, 40);
+      }
+      // 咖啡机
+      ctx.font = '32px serif';
+      ctx.fillText('☕', W - 60, 40);
+      // 植物
+      ctx.fillText('🌿', 30, 40);
+      ctx.fillText('🪴', 60, H - 30);
+      // 白板
+      ctx.fillStyle = '#FBBF24';
+      ctx.fillRect(W / 2 - 80, 8, 160, 44);
+      ctx.strokeStyle = '#D97706';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(W / 2 - 80, 8, 160, 44);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#92400E';
+      ctx.textAlign = 'center';
+      ctx.fillText('📋 Sprint Board', W / 2, 25);
+      ctx.fillText('✅ 进度: 68%', W / 2, 40);
+      ctx.textAlign = 'left';
+    }
+
+    // 绘制智能体
+    function drawAgent(agent) {
+      const x = agent.x;
+      const y = agent.y;
+      const bc = BEHAVIORS[agent.behavior];
+      const isWorking = agent.behavior === 'working';
+
+      // 身体
+      ctx.fillStyle = isWorking ? '#D1FAE5' : '#F3F4F6';
+      ctx.strokeStyle = isWorking ? '#22C55E' : '#D1D5DB';
+      ctx.lineWidth = 2;
+      roundRect(ctx, x - 24, y - 24, 48, 48, 7);
+      ctx.fill();
+      ctx.stroke();
+
+      // 工作发光
+      if (isWorking) {
+        ctx.save();
+        ctx.globalAlpha = 0.3 + Math.sin(frame * 0.05) * 0.15;
+        ctx.strokeStyle = '#22C55E';
+        ctx.lineWidth = 3;
+        roundRect(ctx, x - 27, y - 27, 54, 54, 9);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Emoji
+      ctx.font = '28px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(agent.emoji, x, y - 2);
+
+      // 行为气泡
+      const bubbleY = y - 40;
+      const bobble = Math.sin(frame * 0.08) * 3;
+      ctx.font = '18px serif';
+      ctx.fillText(bc.icon, x, bubbleY + bobble);
+
+      // 名字
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#6B7280';
+      ctx.fillText(agent.name.slice(0, 6), x, y + 32);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // 动画循环
+    function animate() {
+      frame++;
+      ctx.clearRect(0, 0, W, H);
+      drawOffice();
+
+      agents.forEach(agent => {
+        // 行为切换
+        agent.behaviorTimer--;
+        if (agent.behaviorTimer <= 0) {
+          agent.behavior = randomBehavior();
+          const [, maxDur] = BEHAVIORS[agent.behavior].duration;
+          agent.behaviorTimer = Math.random() * maxDur * 60 + 100;
+        }
+        // 走动
+        if (agent.behavior === 'walking') {
+          agent.walkTimer--;
+          if (agent.walkTimer <= 0) {
+            agent.x += (Math.random() - 0.5) * 40;
+            agent.y += (Math.random() - 0.5) * 30;
+            agent.x = Math.max(40, Math.min(W - 40, agent.x));
+            agent.y = Math.max(80, Math.min(H - 40, agent.y));
+            agent.walkTimer = 60 + Math.random() * 120;
+          }
+        }
+        drawAgent(agent);
+      });
+
+      // 更新统计
+      const stats = {
+        total: agents.length,
+        working: agents.filter(a => a.behavior === 'working').length,
+        gaming: agents.filter(a => a.behavior === 'gaming').length,
+        sleeping: agents.filter(a => a.behavior === 'sleeping').length,
+      };
+      document.getElementById('stats').innerHTML = `
+        <span>👥 ${stats.total} 人</span>
+        <span>🔥 ${stats.working} 工作中</span>
+        <span>🎮 ${stats.gaming} 摸鱼</span>
+        <span>😴 ${stats.sleeping} 睡觉</span>
+      `;
+
+      requestAnimationFrame(animate);
+    }
+
+    // 点击检测
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      for (const agent of agents) {
+        if (Math.abs(mx - agent.x) < 27 && Math.abs(my - agent.y) < 27) {
+          showModal(agent);
+          return;
+        }
+      }
+      hideModal();
+    });
+
+    function showModal(agent) {
+      selectedAgent = agent;
+      const bc = BEHAVIORS[agent.behavior];
+      document.getElementById('modalEmoji').textContent = agent.emoji;
+      document.getElementById('modalName').textContent = agent.name;
+      document.getElementById('modalBehavior').textContent = `${bc.icon} ${bc.label}`;
+      document.getElementById('modalBehavior').style.background = bc.color + '20';
+      document.getElementById('modalBehavior').style.color = bc.color;
+      document.getElementById('modalDesc').textContent = agent.description;
+      document.getElementById('modalDept').textContent = DEPT_LIST.find(d => d.key === agent.department)?.name || agent.department;
+      document.getElementById('modalId').textContent = agent.id;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function hideModal() {
+      document.getElementById('modal').style.display = 'none';
+      selectedAgent = null;
+    }
+
+    document.getElementById('modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modal')) hideModal();
+    });
+
+    // 默认选中工程部
+    selectDept('engineering');
+    animate();
+  </script>
+</body>
+</html>

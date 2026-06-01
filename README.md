@@ -9,6 +9,10 @@
   <img src="https://img.shields.io/badge/llm-powered-purple" alt="LLM Powered">
 </p>
 
+<p align="center">
+  <img src="demo/screenshot.png" alt="PixelAgency 虚拟办公室" width="100%">
+</p>
+
 ---
 
 ## ✨ 这是什么？

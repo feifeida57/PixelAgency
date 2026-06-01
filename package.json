@@ -1,0 +1,28 @@
+{
+  "name": "pixel-agency",
+  "version": "0.1.0",
+  "description": "🎮 215位AI智能体虚拟办公室 - 像素风游戏化Agent调度系统",
+  "type": "module",
+  "scripts": {
+    "build:index": "node scripts/load-agents.mjs",
+    "demo": "npx serve demo -p 8080",
+    "dev": "echo '请将组件集成到 PilotDeck 中使用' && exit 1"
+  },
+  "keywords": [
+    "ai-agents",
+    "virtual-office",
+    "pixel-art",
+    "gamification",
+    "llm",
+    "multi-agent"
+  ],
+  "author": "feifeida57",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feifeida57/PixelAgency.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
