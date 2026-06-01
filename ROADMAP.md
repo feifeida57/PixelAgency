@@ -20,8 +20,8 @@ PixelAgency 的发展路线图。
 - [ ] WebSocket 实时状态同步（[#1](https://github.com/feifeida57/PixelAgency/issues/1)）
 - [ ] 更丰富的行为动画（[#2](https://github.com/feifeida57/PixelAgency/issues/2)）
 - [ ] 智能体互动系统（[#3](https://github.com/feifeida57/PixelAgency/issues/3)）
-- [ ] 可独立运行的 Demo 页面
-- [ ] 截图/GIF 展示
+- [x] 可独立运行的 Demo 页面
+- [x] 截图/GIF 展示
 
 ## 📋 v0.2（计划中）
 

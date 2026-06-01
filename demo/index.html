@@ -219,29 +219,31 @@
       walking:  { label: '走动中', icon: '🚶', color: '#A855F7', duration: [2, 5] },
     };
 
-    // 模拟智能体数据
+    // 模拟智能体数据（带固定状态分布，便于截图展示）
     function generateAgents(dept, count) {
       const names = {
-        'engineering': ['前端工程师', '后端工程师', '全栈工程师', '架构师', 'DevOps工程师'],
-        'design': ['UI设计师', 'UX设计师', '视觉设计师', '动效设计师'],
-        'marketing': ['营销经理', '内容运营', 'SEO专员', '社媒运营'],
-        'product': ['产品经理', '需求分析师', '用户研究员'],
-        'finance': ['财务分析师', '会计', '审计师'],
-        'sales': ['销售经理', '大客户经理', '商务拓展'],
-        'specialized': ['技术顾问', 'AI专家', '安全专家'],
-        'testing': ['测试工程师', '自动化测试', '性能测试'],
-        'support': ['技术支持', '客服经理', '文档工程师'],
-        'hr': ['HR经理', '招聘专员', '培训专员'],
-        'legal': ['法务经理', '合规经理'],
-        'academic': ['研究员', '论文助手'],
-        'game-development': ['Unity工程师', '游戏策划', '游戏美术'],
-        'supply-chain': ['供应链经理', '采购经理'],
-        'project-management': ['项目经理', 'Scrum Master'],
-        'paid-media': ['投放经理', '优化师'],
-        'spatial-computing': ['VR工程师', 'AR工程师'],
+        'engineering': ['前端工程师', '后端工程师', '全栈工程师', '架构师', 'DevOps工程师', '测试工程师', '安全工程师', '数据库工程师', '运维工程师', 'AI工程师'],
+        'design': ['UI设计师', 'UX设计师', '视觉设计师', '动效设计师', '品牌设计师', '插画师', '3D设计师', '设计系统设计师'],
+        'marketing': ['营销经理', '内容运营', 'SEO专员', '社媒运营', '增长黑客', '品牌经理', '公关经理', '活动策划'],
+        'product': ['产品经理', '需求分析师', '用户研究员', '数据产品经理', 'AI产品经理'],
+        'finance': ['财务分析师', '会计', '审计师', '税务师', '投资分析师', '风控经理'],
+        'sales': ['销售经理', '大客户经理', '商务拓展', '客户成功经理', '销售运营'],
+        'specialized': ['技术顾问', 'AI专家', '安全专家', '区块链专家', '云架构师', '物联网专家'],
+        'testing': ['测试工程师', '自动化测试', '性能测试', '安全测试', '测试开发'],
+        'support': ['技术支持', '客服经理', '文档工程师', '培训讲师', '知识库经理'],
+        'hr': ['HR经理', '招聘专员', '培训专员', '薪酬专员', '绩效专员'],
+        'legal': ['法务经理', '合规经理', '知识产权经理', '合同经理'],
+        'academic': ['研究员', '论文助手', '数据分析助手', '学术翻译'],
+        'game-development': ['Unity工程师', '游戏策划', '游戏美术', '游戏音效', '游戏测试', '游戏运营'],
+        'supply-chain': ['供应链经理', '采购经理', '物流经理', '仓储经理'],
+        'project-management': ['项目经理', 'Scrum Master', '敏捷教练', 'PMO经理'],
+        'paid-media': ['投放经理', '优化师', '数据分析师', '创意策划'],
+        'spatial-computing': ['VR工程师', 'AR工程师', '3D建模师', '交互设计师'],
       };
-      const emojis = ['👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', '👨‍💼', '👩‍💼', '👨‍🔬', '👩‍🔬', '👨‍🏫', '👩‍🏫'];
+      const emojis = ['👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', '👨‍💼', '👩‍💼', '👨‍🔬', '👩‍🔬', '👨‍🏫', '👩‍🏫', '👨‍🔧', '👩‍🔧'];
       const deptNames = names[dept] || ['智能体'];
+      // 固定状态分布：前几个工作中，然后有打游戏、睡觉、喝咖啡等
+      const fixedBehaviors = ['working', 'working', 'working', 'gaming', 'sleeping', 'coffee', 'chatting', 'idle', 'walking', 'working'];
       const agents = [];
       for (let i = 0; i < count; i++) {
         agents.push({
@@ -250,7 +252,7 @@
           description: `这是${DEPT_LIST.find(d => d.key === dept)?.name || dept}的${deptNames[i % deptNames.length]}`,
           emoji: emojis[i % emojis.length],
           department: dept,
-          behavior: randomBehavior(),
+          behavior: fixedBehaviors[i % fixedBehaviors.length],
           x: 0, y: 0,
           walkTimer: Math.random() * 300,
           behaviorTimer: Math.random() * 200 + 100,

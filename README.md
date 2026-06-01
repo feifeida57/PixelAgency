@@ -130,6 +130,16 @@ npm run dev
 
 访问 `http://localhost:5174`，点击"虚拟办公室"标签即可看到效果。
 
+### 🎮 快速体验 Demo
+
+想直接看效果？运行 Demo：
+```bash
+npm install
+npm run demo
+```
+
+然后访问 http://localhost:8080，即可看到虚拟办公室 Demo。
+
 ## 💡 工作原理
 
 ```
@@ -181,6 +191,14 @@ const BEHAVIOR_WEIGHTS = [
 
 - [PRD.md](./PRD.md) — 产品需求文档
 - [secretary.md](./prompts/secretary.md) — LLM 秘书系统提示词
+- [ROADMAP.md](./ROADMAP.md) — 发展路线图
+- [docs/architecture.md](./docs/architecture.md) — 架构设计文档
+- [UPSTREAM.md](./UPSTREAM.md) — 上游来源与原创声明
+- [demo/index.html](./demo/index.html) — 可运行 Demo
+- [ROADMAP.md](./ROADMAP.md) — 发展路线图
+- [docs/architecture.md](./docs/architecture.md) — 架构设计文档
+- [UPSTREAM.md](./UPSTREAM.md) — 上游来源与原创声明
+- [demo/index.html](./demo/index.html) — 可运行 Demo
 
 ## 🤝 贡献
 
