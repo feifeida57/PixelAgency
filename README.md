@@ -195,9 +195,6 @@ const BEHAVIOR_WEIGHTS = [
 - [docs/architecture.md](./docs/architecture.md) — 架构设计文档
 - [UPSTREAM.md](./UPSTREAM.md) — 上游来源与原创声明
 - [demo/index.html](./demo/index.html) — 可运行 Demo
-- [ROADMAP.md](./ROADMAP.md) — 发展路线图
-- [docs/architecture.md](./docs/architecture.md) — 架构设计文档
-- [UPSTREAM.md](./UPSTREAM.md) — 上游来源与原创声明
 - [demo/index.html](./demo/index.html) — 可运行 Demo
 
 ## 🤝 贡献
