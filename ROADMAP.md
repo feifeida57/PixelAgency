@@ -13,13 +13,13 @@ PixelAgency 的发展路线图。
 - [x] LLM 秘书系统提示词
 - [x] 智能体索引生成脚本
 
-## 🔜 v0.1（进行中）
+## ✅ v0.1（已完成）
 
 增强交互体验：
 
-- [ ] WebSocket 实时状态同步（[#1](https://github.com/feifeida57/PixelAgency/issues/1)）
-- [ ] 更丰富的行为动画（[#2](https://github.com/feifeida57/PixelAgency/issues/2)）
-- [ ] 智能体互动系统（[#3](https://github.com/feifeida57/PixelAgency/issues/3)）
+- [x] WebSocket 实时状态同步（[#1](https://github.com/feifeida57/PixelAgency/issues/1)）
+- [x] 更丰富的行为动画（[#2](https://github.com/feifeida57/PixelAgency/issues/2)）
+- [x] 智能体互动系统（[#3](https://github.com/feifeida57/PixelAgency/issues/3)）
 - [x] 可独立运行的 Demo 页面
 - [x] 截图/GIF 展示
 
