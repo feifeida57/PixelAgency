@@ -370,7 +370,7 @@
       ctx.textAlign = 'left';
     }
 
-    // 绘制智能体
+    // 绘制智能体（增强动画版）
     function drawAgent(agent) {
       const x = agent.x;
       const y = agent.y;
@@ -402,11 +402,84 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(agent.emoji, x, y - 2);
 
-      // 行为气泡
+      // 行为气泡 + 特殊动画
       const bubbleY = y - 40;
       const bobble = Math.sin(frame * 0.08) * 3;
       ctx.font = '18px serif';
-      ctx.fillText(bc.icon, x, bubbleY + bobble);
+
+      switch (agent.behavior) {
+        case 'working':
+          // 打字动画：气泡上下抖动 + 光标闪烁
+          ctx.fillText(bc.icon, x, bubbleY + bobble);
+          if (frame % 60 < 30) {
+            ctx.font = '10px monospace';
+            ctx.fillStyle = '#22C55E';
+            ctx.fillText('▌', x + 12, bubbleY + bobble);
+          }
+          break;
+
+        case 'gaming':
+          // 手柄摇晃动画
+          const shake = Math.sin(frame * 0.15) * 4;
+          ctx.fillText(bc.icon, x + shake, bubbleY + bobble);
+          break;
+
+        case 'sleeping':
+          // ZZZ 气泡动画
+          ctx.fillText(bc.icon, x, bubbleY + bobble);
+          ctx.font = '12px serif';
+          ctx.fillStyle = '#6366F1';
+          const zOffset = (frame % 120) / 120;
+          ctx.globalAlpha = 1 - zOffset;
+          ctx.fillText('z', x + 15 + zOffset * 10, bubbleY - zOffset * 15);
+          ctx.fillText('Z', x + 20 + zOffset * 8, bubbleY - zOffset * 20 - 5);
+          ctx.globalAlpha = 1;
+          break;
+
+        case 'coffee':
+          // 咖啡冒热气动画
+          ctx.fillText(bc.icon, x, bubbleY + bobble);
+          ctx.font = '10px serif';
+          ctx.fillStyle = '#92400E';
+          const steamPhase = frame % 60;
+          if (steamPhase < 20) {
+            ctx.globalAlpha = 0.6;
+            ctx.fillText('~', x - 8, bubbleY - 10 - steamPhase * 0.5);
+          } else if (steamPhase < 40) {
+            ctx.globalAlpha = 0.4;
+            ctx.fillText('~', x + 5, bubbleY - 15 - (steamPhase - 20) * 0.3);
+          } else {
+            ctx.globalAlpha = 0.2;
+            ctx.fillText('~', x - 3, bubbleY - 12 - (steamPhase - 40) * 0.4);
+          }
+          ctx.globalAlpha = 1;
+          break;
+
+        case 'chatting':
+          // 聊天气泡动画
+          ctx.fillText(bc.icon, x, bubbleY + bobble);
+          ctx.font = '8px serif';
+          ctx.fillStyle = '#3B82F6';
+          const chatPhase = frame % 90;
+          if (chatPhase < 30) {
+            ctx.globalAlpha = 0.7;
+            ctx.fillText('💭', x + 18, bubbleY - 5);
+          } else if (chatPhase < 60) {
+            ctx.globalAlpha = 0.5;
+            ctx.fillText('💭', x + 22, bubbleY - 10);
+          }
+          ctx.globalAlpha = 1;
+          break;
+
+        case 'walking':
+          // 走动动画：气泡左右摇摆
+          const walkBob = Math.sin(frame * 0.2) * 5;
+          ctx.fillText(bc.icon, x + walkBob, bubbleY + bobble);
+          break;
+
+        default:
+          ctx.fillText(bc.icon, x, bubbleY + bobble);
+      }
 
       // 名字
       ctx.font = '11px sans-serif';
