@@ -212,6 +212,10 @@
         <span>ID</span>
         <span id="modalId" style="font-family:monospace;font-size:12px"></span>
       </div>
+      <div id="modalHistory" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;display:none;">
+        <h4 style="font-size:12px;color:#999;margin-bottom:8px;">最近任务</h4>
+        <div id="modalHistoryList" style="max-height:120px;overflow-y:auto;"></div>
+      </div>
     </div>
   </div>
 
@@ -306,6 +310,7 @@
     let selectedAgent = null;
     let frame = 0;
     let searchQuery = '';
+    let taskHistory = [];
 
     // 搜索框事件
     document.getElementById('searchBox').addEventListener('input', (e) => {
@@ -696,6 +701,24 @@
       document.getElementById('modalDesc').textContent = agent.description;
       document.getElementById('modalDept').textContent = DEPT_LIST.find(d => d.key === agent.department)?.name || agent.department;
       document.getElementById('modalId').textContent = agent.id;
+
+      // 任务历史
+      const agentHistory = taskHistory.filter(h => h.agentId === agent.id);
+      const historyDiv = document.getElementById('modalHistory');
+      const historyList = document.getElementById('modalHistoryList');
+      if (agentHistory.length > 0) {
+        historyDiv.style.display = 'block';
+        historyList.innerHTML = agentHistory.slice(0, 5).map(h => `
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${h.status === 'running' ? '#eab308' : h.status === 'completed' ? '#22c55e' : '#ef4444'}"></span>
+            <span style="flex:1;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.task}</span>
+            <span style="color:#999;">${new Date(h.startTime).toLocaleTimeString()}</span>
+          </div>
+        `).join('');
+      } else {
+        historyDiv.style.display = 'none';
+      }
+
       document.getElementById('modal').style.display = 'flex';
     }
 
