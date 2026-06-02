@@ -212,6 +212,23 @@
         <span>ID</span>
         <span id="modalId" style="font-family:monospace;font-size:12px"></span>
       </div>
+      <div id="modalStats" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;display:none;">
+        <h4 style="font-size:12px;color:#999;margin-bottom:8px;">性能统计</h4>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+          <div style="background:#f9fafb;padding:8px;border-radius:8px;">
+            <div id="modalStatsCompleted" style="font-size:18px;font-weight:600;color:#22c55e;">0</div>
+            <div style="font-size:11px;color:#999;">完成</div>
+          </div>
+          <div style="background:#f9fafb;padding:8px;border-radius:8px;">
+            <div id="modalStatsFailed" style="font-size:18px;font-weight:600;color:#ef4444;">0</div>
+            <div style="font-size:11px;color:#999;">失败</div>
+          </div>
+          <div style="background:#f9fafb;padding:8px;border-radius:8px;">
+            <div id="modalStatsAvgTime" style="font-size:18px;font-weight:600;color:#3b82f6;">0s</div>
+            <div style="font-size:11px;color:#999;">平均耗时</div>
+          </div>
+        </div>
+      </div>
       <div id="modalHistory" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;display:none;">
         <h4 style="font-size:12px;color:#999;margin-bottom:8px;">最近任务</h4>
         <div id="modalHistoryList" style="max-height:120px;overflow-y:auto;"></div>
@@ -702,11 +719,24 @@
       document.getElementById('modalDept').textContent = DEPT_LIST.find(d => d.key === agent.department)?.name || agent.department;
       document.getElementById('modalId').textContent = agent.id;
 
-      // 任务历史
+      // 性能统计 + 任务历史
       const agentHistory = taskHistory.filter(h => h.agentId === agent.id);
+      const statsDiv = document.getElementById('modalStats');
       const historyDiv = document.getElementById('modalHistory');
       const historyList = document.getElementById('modalHistoryList');
+
       if (agentHistory.length > 0) {
+        const completed = agentHistory.filter(h => h.status === 'completed');
+        const failed = agentHistory.filter(h => h.status === 'failed');
+        const avgTime = completed.length > 0
+          ? completed.reduce((sum, h) => sum + ((h.endTime || 0) - h.startTime), 0) / completed.length / 1000
+          : 0;
+
+        statsDiv.style.display = 'block';
+        document.getElementById('modalStatsCompleted').textContent = completed.length;
+        document.getElementById('modalStatsFailed').textContent = failed.length;
+        document.getElementById('modalStatsAvgTime').textContent = avgTime.toFixed(1) + 's';
+
         historyDiv.style.display = 'block';
         historyList.innerHTML = agentHistory.slice(0, 5).map(h => `
           <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px;">
@@ -716,6 +746,7 @@
           </div>
         `).join('');
       } else {
+        statsDiv.style.display = 'none';
         historyDiv.style.display = 'none';
       }
 
