@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   BarChart3,
   Bot,
+  Building,
   Database,
   Folder,
   PanelLeftOpen,
@@ -27,6 +28,7 @@ type Tab = { id: AppTab; labelKey: string; icon: LucideIcon };
 // tools are still reachable via plugin tabs / programmatic activeTab if a
 // future feature needs them, but they were noisy in the day-to-day flow.
 const TABS: Tab[] = [
+  { id: 'virtual-office', labelKey: 'tabs.virtualOffice', icon: Building },
   { id: 'chat',      labelKey: 'tabs.chat',      icon: Bot },
   { id: 'files',     labelKey: 'tabs.files',     icon: Folder },
   { id: 'skills',    labelKey: 'tabs.skills',    icon: Sparkles },

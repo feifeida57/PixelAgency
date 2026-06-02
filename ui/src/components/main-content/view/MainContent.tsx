@@ -30,6 +30,7 @@ import MainContentStateView from './subcomponents/MainContentStateView';
 import ErrorBoundary from './ErrorBoundary';
 import MemoryPanel from './memory/MemoryPanel';
 import SkillsV2 from '../../main-content-v2/SkillsV2';
+import VirtualOfficeV2 from '../../main-content-v2/VirtualOfficeV2';
 
 type TaskMasterContextValue = {
   currentProject?: Project | null;
@@ -491,6 +492,7 @@ function SplitBody(props: SplitBodyProps) {
   // those code paths, so we keep them here as full-screen tool views.
   const isPlugin = typeof activeTab === 'string' && activeTab.startsWith('plugin:');
   const fullScreenToolTabs = new Set([
+    'virtual-office',
     'shell',
     'git',
     'always-on',
@@ -591,6 +593,7 @@ function SplitBody(props: SplitBodyProps) {
     if (activeTab === 'dashboard') return <DashboardV2 projectFilter={selectedProject?.name} projectFullPath={selectedProject?.fullPath} onSelectProject={onSelectProjectByName} />;
     if (activeTab === 'memory') return <MemoryPanel selectedProject={selectedProject} />;
     if (activeTab === 'skills') return <SkillsV2 selectedProject={selectedProject} projects={projects} />;
+    if (activeTab === 'virtual-office') return <VirtualOfficeV2 selectedSession={selectedSession} />;
     if (renderTasksAsTool) return <TasksV2 isVisible />;
     if (isPlugin) {
       return (
