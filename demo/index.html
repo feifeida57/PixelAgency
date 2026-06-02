@@ -501,22 +501,83 @@
       ctx.closePath();
     }
 
+    // 互动系统状态
+    let interactionTimer = 300 + Math.random() * 600;
+    let activeInteraction = null;
+    let interactionDuration = 0;
+
     // 动画循环
     function animate() {
       frame++;
       ctx.clearRect(0, 0, W, H);
       drawOffice();
 
-      agents.forEach(agent => {
-        // 行为切换
-        agent.behaviorTimer--;
-        if (agent.behaviorTimer <= 0) {
-          agent.behavior = randomBehavior();
-          const [, maxDur] = BEHAVIORS[agent.behavior].duration;
-          agent.behaviorTimer = Math.random() * maxDur * 60 + 100;
+      // 互动系统逻辑
+      interactionTimer--;
+      if (interactionTimer <= 0 && !activeInteraction) {
+        const idleAgents = agents.filter(a => true);
+        if (idleAgents.length >= 2) {
+          const interactionTypes = ['chat', 'coffee', 'meeting', 'collaborate'];
+          const type = interactionTypes[Math.floor(Math.random() * interactionTypes.length)];
+          const count = type === 'meeting' ? Math.min(3 + Math.floor(Math.random() * 3), idleAgents.length) : 2;
+          const selectedIndices = [];
+          const firstIdx = Math.floor(Math.random() * idleAgents.length);
+          selectedIndices.push(firstIdx);
+          for (let i = 1; i < count; i++) {
+            let minDist = Infinity;
+            let nearestIdx = -1;
+            for (let j = 0; j < idleAgents.length; j++) {
+              if (selectedIndices.includes(j)) continue;
+              const dx = idleAgents[j].x - idleAgents[firstIdx].x;
+              const dy = idleAgents[j].y - idleAgents[firstIdx].y;
+              const dist = dx * dx + dy * dy;
+              if (dist < minDist) {
+                minDist = dist;
+                nearestIdx = j;
+              }
+            }
+            if (nearestIdx >= 0) selectedIndices.push(nearestIdx);
+          }
+          activeInteraction = {
+            type,
+            agents: selectedIndices.map(i => idleAgents[i].id)
+          };
+          interactionDuration = 300 + Math.random() * 300;
+          selectedIndices.forEach(i => {
+            const agent = idleAgents[i];
+            switch (type) {
+              case 'chat': agent.behavior = 'chatting'; break;
+              case 'coffee': agent.behavior = 'coffee'; break;
+              case 'meeting': agent.behavior = 'chatting'; break;
+              case 'collaborate': agent.behavior = 'working'; break;
+            }
+          });
         }
-        // 走动
-        if (agent.behavior === 'walking') {
+        interactionTimer = 600 + Math.random() * 1200;
+      }
+
+      if (activeInteraction) {
+        interactionDuration--;
+        if (interactionDuration <= 0) {
+          activeInteraction.agents.forEach(id => {
+            const agent = agents.find(a => a.id === id);
+            if (agent) agent.behavior = randomBehavior();
+          });
+          activeInteraction = null;
+        }
+      }
+
+      agents.forEach(agent => {
+        const isInInteraction = activeInteraction?.agents.includes(agent.id);
+        if (!isInInteraction) {
+          agent.behaviorTimer--;
+          if (agent.behaviorTimer <= 0) {
+            agent.behavior = randomBehavior();
+            const [, maxDur] = BEHAVIORS[agent.behavior].duration;
+            agent.behaviorTimer = Math.random() * maxDur * 60 + 100;
+          }
+        }
+        if (agent.behavior === 'walking' && !isInInteraction) {
           agent.walkTimer--;
           if (agent.walkTimer <= 0) {
             agent.x += (Math.random() - 0.5) * 40;
@@ -527,6 +588,27 @@
           }
         }
         drawAgent(agent);
+
+        // 互动连线效果
+        if (isInInteraction && activeInteraction) {
+          const otherIds = activeInteraction.agents.filter(id => id !== agent.id);
+          otherIds.forEach(otherId => {
+            const other = agents.find(a => a.id === otherId);
+            if (other) {
+              ctx.save();
+              ctx.strokeStyle = '#3B82F6';
+              ctx.globalAlpha = 0.3 + Math.sin(frame * 0.1) * 0.2;
+              ctx.lineWidth = 2;
+              ctx.setLineDash([4, 4]);
+              ctx.beginPath();
+              ctx.moveTo(agent.x, agent.y);
+              ctx.lineTo(other.x, other.y);
+              ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.restore();
+            }
+          });
+        }
       });
 
       // 更新统计
