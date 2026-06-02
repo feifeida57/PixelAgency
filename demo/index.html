@@ -151,6 +151,18 @@
       border-color: #3b82f6;
       box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
     }
+    .theme-btn {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .theme-btn:hover {
+      background: #f5f5f5;
+    }
   </style>
 </head>
 <body>
@@ -167,6 +179,7 @@
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
       <div class="dept-selector" id="deptSelector" style="flex:1;margin-bottom:0;"></div>
       <input type="text" class="search-box" id="searchBox" placeholder="🔍 搜索智能体...">
+      <button class="theme-btn" id="themeBtn" title="切换主题">🌙</button>
     </div>
 
     <div class="stats" id="stats">
@@ -299,6 +312,13 @@
       searchQuery = e.target.value;
     });
 
+    // 主题切换
+    let currentTheme = 'light';
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.getElementById('themeBtn').textContent = currentTheme === 'light' ? '🌙' : '☀️';
+    });
+
     // Canvas
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -344,12 +364,13 @@
       });
     }
 
-    // 绘制办公室场景
+    // 绘制办公室场景（支持深色主题）
     function drawOffice() {
+      const isDark = currentTheme === 'dark';
       // 地板
-      ctx.fillStyle = '#F5F0EB';
+      ctx.fillStyle = isDark ? '#1E1E1E' : '#F5F0EB';
       ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = '#E8E0D8';
+      ctx.strokeStyle = isDark ? '#2D2D2D' : '#E8E0D8';
       ctx.lineWidth = 0.5;
       for (let x = 0; x < W; x += 68) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
@@ -358,16 +379,16 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
       // 墙
-      ctx.fillStyle = '#E8E0D8';
+      ctx.fillStyle = isDark ? '#2D2D2D' : '#E8E0D8';
       ctx.fillRect(0, 0, W, 60);
-      ctx.fillStyle = '#D4C9BE';
+      ctx.fillStyle = isDark ? '#3D3D3D' : '#D4C9BE';
       ctx.fillRect(0, 57, W, 3);
       // 窗户
       for (let i = 0; i < 4; i++) {
         const wx = 100 + i * 240;
-        ctx.fillStyle = '#BFDBFE';
+        ctx.fillStyle = isDark ? '#1E3A5F' : '#BFDBFE';
         ctx.fillRect(wx, 10, 136, 40);
-        ctx.strokeStyle = '#93C5FD';
+        ctx.strokeStyle = isDark ? '#2563EB' : '#93C5FD';
         ctx.lineWidth = 2;
         ctx.strokeRect(wx, 10, 136, 40);
       }
@@ -378,13 +399,13 @@
       ctx.fillText('🌿', 30, 40);
       ctx.fillText('🪴', 60, H - 30);
       // 白板
-      ctx.fillStyle = '#FBBF24';
+      ctx.fillStyle = isDark ? '#92400E' : '#FBBF24';
       ctx.fillRect(W / 2 - 80, 8, 160, 44);
-      ctx.strokeStyle = '#D97706';
+      ctx.strokeStyle = isDark ? '#B45309' : '#D97706';
       ctx.lineWidth = 1;
       ctx.strokeRect(W / 2 - 80, 8, 160, 44);
       ctx.font = '12px sans-serif';
-      ctx.fillStyle = '#92400E';
+      ctx.fillStyle = isDark ? '#FCD34D' : '#92400E';
       ctx.textAlign = 'center';
       ctx.fillText('📋 Sprint Board', W / 2, 25);
       ctx.fillText('✅ 进度: 68%', W / 2, 40);
