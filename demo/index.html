@@ -139,6 +139,18 @@
       font-size: 14px;
       color: #92400e;
     }
+    .search-box {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      width: 200px;
+      outline: none;
+    }
+    .search-box:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -152,7 +164,10 @@
       ⚠️ 这是 Demo 页面，展示虚拟办公室效果。完整版需要集成到 PilotDeck 中使用。
     </div>
 
-    <div class="dept-selector" id="deptSelector"></div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+      <div class="dept-selector" id="deptSelector" style="flex:1;margin-bottom:0;"></div>
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 搜索智能体...">
+    </div>
 
     <div class="stats" id="stats">
       <span>👥 0 人</span>
@@ -277,6 +292,12 @@
     let agents = [];
     let selectedAgent = null;
     let frame = 0;
+    let searchQuery = '';
+
+    // 搜索框事件
+    document.getElementById('searchBox').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+    });
 
     // Canvas
     const canvas = document.getElementById('canvas');
@@ -370,17 +391,18 @@
       ctx.textAlign = 'left';
     }
 
-    // 绘制智能体（增强动画版）
+    // 绘制智能体（增强动画版 + 搜索高亮）
     function drawAgent(agent) {
       const x = agent.x;
       const y = agent.y;
       const bc = BEHAVIORS[agent.behavior];
       const isWorking = agent.behavior === 'working';
+      const isSearchMatch = searchQuery && agent.name.toLowerCase().includes(searchQuery.toLowerCase());
 
       // 身体
-      ctx.fillStyle = isWorking ? '#D1FAE5' : '#F3F4F6';
-      ctx.strokeStyle = isWorking ? '#22C55E' : '#D1D5DB';
-      ctx.lineWidth = 2;
+      ctx.fillStyle = isSearchMatch ? '#FEF3C7' : isWorking ? '#D1FAE5' : '#F3F4F6';
+      ctx.strokeStyle = isSearchMatch ? '#F59E0B' : isWorking ? '#22C55E' : '#D1D5DB';
+      ctx.lineWidth = isSearchMatch ? 3 : 2;
       roundRect(ctx, x - 24, y - 24, 48, 48, 7);
       ctx.fill();
       ctx.stroke();
