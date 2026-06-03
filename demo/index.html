@@ -328,6 +328,9 @@
     let frame = 0;
     let searchQuery = '';
     let taskHistory = [];
+    let dragAgent = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
 
     // 搜索框事件
     document.getElementById('searchBox').addEventListener('input', (e) => {
@@ -693,8 +696,35 @@
       requestAnimationFrame(animate);
     }
 
-    // 点击检测
-    canvas.addEventListener('click', (e) => {
+    // 拖拽 + 点击
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      for (const agent of agents) {
+        if (Math.abs(mx - agent.x) < 27 && Math.abs(my - agent.y) < 27) {
+          dragAgent = agent;
+          dragOffsetX = mx - agent.x;
+          dragOffsetY = my - agent.y;
+          return;
+        }
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!dragAgent) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left - dragOffsetX;
+      const my = e.clientY - rect.top - dragOffsetY;
+      dragAgent.x = Math.max(30, Math.min(W - 30, mx));
+      dragAgent.y = Math.max(70, Math.min(H - 30, my));
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (dragAgent) {
+        dragAgent = null;
+        return;
+      }
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
