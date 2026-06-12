@@ -17,7 +17,7 @@
  * sync legacy parity tests when changing.
  */
 
-export type SubagentDefinitionId = "general-purpose" | "explore" | "plan" | "verify";
+export type SubagentDefinitionId = "general-purpose" | "explore" | "plan" | "verify" | `dept:${string}`;
 
 export type SubagentDefinition = {
   /** Stable identifier exposed via `agent` tool's `subagent_type` input. */
@@ -134,7 +134,41 @@ Be rigorous. A silent pass when issues exist is worse than a false alarm.`,
 };
 
 export function getSubagentDefinition(id: string): SubagentDefinition | undefined {
-  return (SUBAGENT_DEFINITIONS as Record<string, SubagentDefinition>)[id];
+  // 先查内置定义
+  const builtin = (SUBAGENT_DEFINITIONS as Record<string, SubagentDefinition>)[id];
+  if (builtin) return builtin;
+
+  // 再查部门 Agent 定义（延迟导入避免循环依赖）
+  if (id.startsWith("dept:")) {
+    return buildDepartmentSubagentDefinition(id.slice(5));
+  }
+  return undefined;
+}
+
+/**
+ * 将部门 Agent 定义转换为 SubagentDefinition
+ * 供 dispatch 工具通过 fork API 使用
+ */
+function buildDepartmentSubagentDefinition(agentId: string): SubagentDefinition | undefined {
+  // 延迟导入避免循环依赖
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getDepartmentAgent } = require("../departments/definitions.js");
+    const deptAgent = getDepartmentAgent(agentId);
+    if (!deptAgent) return undefined;
+
+    return {
+      id: `dept:${agentId}`,
+      description: deptAgent.description,
+      allowedTools: deptAgent.allowedTools,
+      omitProjectInstructions: false,
+      omitGitStatus: false,
+      isReadOnly: deptAgent.isReadOnly,
+      systemPromptSuffix: deptAgent.systemPrompt,
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 export function buildSubagentSystemPrompt(definition: SubagentDefinition): string {

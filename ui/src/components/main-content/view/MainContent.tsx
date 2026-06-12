@@ -31,6 +31,9 @@ import ErrorBoundary from './ErrorBoundary';
 import MemoryPanel from './memory/MemoryPanel';
 import SkillsV2 from '../../main-content-v2/SkillsV2';
 import VirtualOfficeV2 from '../../main-content-v2/VirtualOfficeV2';
+import { startSessionCommand } from '../../chat/utils/sessionLauncher';
+import { MultiAgentWorkspace, MergedReport } from '../../main-content-v2/collaboration';
+import { useCollaboration } from '../../../hooks/useCollaboration';
 
 type TaskMasterContextValue = {
   currentProject?: Project | null;
@@ -56,6 +59,173 @@ async function readJsonPayload<T>(response: Response): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+// 协作工作区视图组件
+function CollaborationView() {
+  const { currentSession, sessions, listSessions, getSession, completeSession, isLoading, error } = useCollaboration();
+
+  useEffect(() => {
+    listSessions();
+  }, [listSessions]);
+
+  // 如果没有当前会话，显示会话列表
+  if (!currentSession) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+          <h2 className="text-lg font-semibold text-gray-900">协作会话</h2>
+          <button
+            onClick={() => listSessions()}
+            className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            刷新
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-4">
+          {isLoading && (
+            <div className="text-center text-gray-500 py-8">加载中...</div>
+          )}
+          {error && (
+            <div className="text-center text-red-500 py-8">{error}</div>
+          )}
+          {!isLoading && !error && sessions.length === 0 && (
+            <div className="text-center text-gray-400 py-8">
+              暂无活跃的协作会话
+            </div>
+          )}
+          {sessions.length > 0 && (
+            <div className="space-y-4">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => getSession(session.id)}
+                >
+                  <h3 className="font-medium text-gray-900">{session.topic}</h3>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                    <span>{session.participants?.length || 0} 位参与者</span>
+                    <span>{session.findings?.length || 0} 条发现</span>
+                    <span>{session.phase}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 显示当前协作会话
+  const agents = currentSession.participants.map((p) => ({
+    id: p.agentId,
+    role: p.agentRole,
+    department: p.department,
+    status: p.status as 'working' | 'completed' | 'waiting' | 'idle',
+  }));
+
+  const findings = currentSession.findings.map((f) => ({
+    id: f.id,
+    agentRole: f.agentRole,
+    department: f.department,
+    content: f.content,
+    category: f.category as any,
+    timestamp: f.timestamp,
+  }));
+
+  const departments = [...new Set(currentSession.participants.map((p) => p.department))];
+
+  return (
+    <MultiAgentWorkspace
+      sessionId={currentSession.id}
+      topic={currentSession.topic}
+      agents={agents}
+      findings={findings}
+      phase={currentSession.phase as any}
+      onComplete={() => completeSession(currentSession.id)}
+    />
+  );
+}
+
+// 合并报告视图组件
+function MergedReportView() {
+  const { currentSession, sessions, listSessions, getSession, isLoading, error } = useCollaboration();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    listSessions();
+  }, [listSessions]);
+
+  useEffect(() => {
+    if (selectedSessionId) {
+      getSession(selectedSessionId);
+    }
+  }, [selectedSessionId, getSession]);
+
+  // 如果没有选择会话，显示会话列表
+  if (!currentSession) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+          <h2 className="text-lg font-semibold text-gray-900">选择协作会话生成报告</h2>
+        </div>
+        <div className="flex-1 overflow-auto p-4">
+          {isLoading && (
+            <div className="text-center text-gray-500 py-8">加载中...</div>
+          )}
+          {error && (
+            <div className="text-center text-red-500 py-8">{error}</div>
+          )}
+          {!isLoading && !error && sessions.length === 0 && (
+            <div className="text-center text-gray-400 py-8">
+              暂无协作会话
+            </div>
+          )}
+          {sessions.length > 0 && (
+            <div className="space-y-4">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => setSelectedSessionId(session.id)}
+                >
+                  <h3 className="font-medium text-gray-900">{session.topic}</h3>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                    <span>{session.participants?.length || 0} 位参与者</span>
+                    <span>{session.findings?.length || 0} 条发现</span>
+                    <span>{session.phase}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 显示合并报告
+  const findings = currentSession.findings.map((f) => ({
+    id: f.id,
+    agentRole: f.agentRole,
+    department: f.department,
+    content: f.content,
+    category: f.category as any,
+    timestamp: f.timestamp,
+  }));
+
+  const departments = [...new Set(currentSession.participants.map((p) => p.department))];
+
+  return (
+    <MergedReport
+      topic={currentSession.topic}
+      findings={findings}
+      departments={departments}
+      phase={currentSession.phase as any}
+      onBackToWorkspace={() => setSelectedSessionId(null)}
+    />
+  );
 }
 
 function MainContent({
@@ -321,7 +491,7 @@ function MainContent({
     );
   }
 
-  if (!selectedProject && activeTab !== 'dashboard') {
+  if (!selectedProject && activeTab !== 'dashboard' && activeTab !== 'virtual-office') {
     return (
       <MainContentStateView
         mode="empty"
@@ -593,7 +763,26 @@ function SplitBody(props: SplitBodyProps) {
     if (activeTab === 'dashboard') return <DashboardV2 projectFilter={selectedProject?.name} projectFullPath={selectedProject?.fullPath} onSelectProject={onSelectProjectByName} />;
     if (activeTab === 'memory') return <MemoryPanel selectedProject={selectedProject} />;
     if (activeTab === 'skills') return <SkillsV2 selectedProject={selectedProject} projects={projects} />;
-    if (activeTab === 'virtual-office') return <VirtualOfficeV2 selectedSession={selectedSession} />;
+    if (activeTab === 'virtual-office') {
+      const handleAgentChat = (agent: { id: string; name: string; department: string; departmentName: string; emoji: string }) => {
+        if (!selectedProject) return;
+        setActiveTab('chat');
+        const dispatchPrompt = `请调度「${agent.name}」（${agent.departmentName}）来处理以下任务：`;
+        startSessionCommand({
+          sendMessage,
+          selectedProject,
+          command: dispatchPrompt,
+          sessionSummary: `调度 ${agent.name}`,
+        });
+      };
+      return <VirtualOfficeV2 onAgentChat={handleAgentChat} />;
+    }
+    if (activeTab === 'collaboration') {
+      return <CollaborationView />;
+    }
+    if (activeTab === 'merged-report') {
+      return <MergedReportView />;
+    }
     if (renderTasksAsTool) return <TasksV2 isVisible />;
     if (isPlugin) {
       return (

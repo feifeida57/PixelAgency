@@ -59,6 +59,7 @@ const BEHAVIORS: Record<AgentBehavior, { label: string; icon: string; color: str
 
 // ========== 持久化 ==========
 const STORAGE_KEY = 'pilotdeck-working-agents';
+const HISTORY_KEY = 'pilotdeck-task-history';
 
 function getWorkingAgents(): Map<string, { since: number; task?: string }> {
   try {
@@ -75,6 +76,41 @@ function saveWorkingAgents(map: Map<string, { since: number; task?: string }>) {
   const obj: Record<string, { since: number; task?: string }> = {};
   map.forEach((v, k) => { obj[k] = v; });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+}
+
+// 任务历史记录
+interface TaskHistory {
+  id: string;
+  agentId: string;
+  agentName: string;
+  task: string;
+  startTime: number;
+  endTime?: number;
+  status: 'running' | 'completed' | 'failed';
+}
+
+function getTaskHistory(): TaskHistory[] {
+  try {
+    const stored = localStorage.getItem(HISTORY_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return [];
+}
+
+function addTaskHistory(entry: TaskHistory) {
+  const history = getTaskHistory();
+  history.unshift(entry); // 最新的在前面
+  if (history.length > 50) history.pop(); // 最多保留 50 条
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function updateTaskHistory(id: string, updates: Partial<TaskHistory>) {
+  const history = getTaskHistory();
+  const idx = history.findIndex(h => h.id === id);
+  if (idx >= 0) {
+    history[idx] = { ...history[idx], ...updates };
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }
 }
 
 // ========== 像素角色绘制（增强动画版） ==========
@@ -303,8 +339,14 @@ function layoutDesks(count: number, areaW: number, areaH: number, startY: number
   return positions;
 }
 
+// ========== Props ==========
+interface VirtualOfficeV2Props {
+  /** 点击 Agent 的"对话"按钮时回调，用于跳转到聊天 tab */
+  onAgentChat?: (agent: { id: string; name: string; department: string; departmentName: string; emoji: string }) => void;
+}
+
 // ========== 主组件 ==========
-export default function VirtualOfficeV2() {
+export default function VirtualOfficeV2({ onAgentChat }: VirtualOfficeV2Props = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const agentsRef = useRef<Agent[]>([]);
   const frameRef = useRef(0);
@@ -314,6 +356,7 @@ export default function VirtualOfficeV2() {
   const [stats, setStats] = useState({ total: 0, working: 0, gaming: 0, sleeping: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const dragRef = useRef<{ agent: Agent; offsetX: number; offsetY: number } | null>(null);
   const { subscribe } = useWebSocket();
 
   // 加载当前部门的智能体
@@ -369,7 +412,8 @@ export default function VirtualOfficeV2() {
         if (!roleMatch) return;
 
         const roleName = roleMatch[1];
-        activeCalls.set(msg.toolId || msg.id, roleName);
+        const callId = msg.toolId || msg.id;
+        activeCalls.set(callId, roleName);
 
         // 在 agent-index 中查找匹配的智能体
         const agents = agentsRef.current;
@@ -384,6 +428,15 @@ export default function VirtualOfficeV2() {
           const wm = getWorkingAgents();
           wm.set(match.id, { since: Date.now(), task: match.currentTask });
           saveWorkingAgents(wm);
+          // 记录任务历史
+          addTaskHistory({
+            id: callId,
+            agentId: match.id,
+            agentName: match.name,
+            task: match.currentTask,
+            startTime: Date.now(),
+            status: 'running',
+          });
         }
       }
 
@@ -404,6 +457,11 @@ export default function VirtualOfficeV2() {
             const wm = getWorkingAgents();
             wm.delete(match.id);
             saveWorkingAgents(wm);
+            // 更新任务历史
+            updateTaskHistory(msg.toolId, {
+              endTime: Date.now(),
+              status: msg.ok !== false ? 'completed' : 'failed',
+            });
           }
         }
       }
@@ -584,8 +642,43 @@ export default function VirtualOfficeV2() {
     return () => cancelAnimationFrame(animRef.current);
   }, [dept]);
 
-  // 点击检测
-  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  // 拖拽开始
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    for (const agent of agentsRef.current) {
+      const dx = mx - agent.x;
+      const dy = my - agent.y;
+      if (Math.abs(dx) < 27 && Math.abs(dy) < 27) {
+        dragRef.current = { agent, offsetX: dx, offsetY: dy };
+        return;
+      }
+    }
+  }, []);
+
+  // 拖拽中
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!dragRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left - dragRef.current.offsetX;
+    const my = e.clientY - rect.top - dragRef.current.offsetY;
+    dragRef.current.agent.x = Math.max(30, Math.min(1160, mx));
+    dragRef.current.agent.y = Math.max(70, Math.min(820, my));
+  }, []);
+
+  // 拖拽结束
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (dragRef.current) {
+      dragRef.current = null;
+      return;
+    }
+    // 点击检测
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -680,6 +773,24 @@ export default function VirtualOfficeV2() {
           >
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
+          {/* 重置布局 */}
+          <button
+            onClick={() => {
+              if (dept) {
+                const positions = layoutDesks(agentsRef.current.length, 1190, 850, 70);
+                agentsRef.current.forEach((a, i) => {
+                  if (positions[i]) {
+                    a.x = positions[i].x;
+                    a.y = positions[i].y;
+                  }
+                });
+              }
+            }}
+            className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+            title="重置布局"
+          >
+            🔄
+          </button>
         </div>
       </div>
 
@@ -704,8 +815,10 @@ export default function VirtualOfficeV2() {
             {/* Canvas */}
             <canvas
               ref={canvasRef}
-              onClick={handleCanvasClick}
-              className="rounded-lg shadow-lg cursor-pointer border border-neutral-200 dark:border-neutral-700"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              className="rounded-lg shadow-lg cursor-grab active:cursor-grabbing border border-neutral-200 dark:border-neutral-700"
               style={{ imageRendering: 'pixelated' }}
             />
           </div>
@@ -736,7 +849,71 @@ export default function VirtualOfficeV2() {
                 <span className="font-mono text-xs text-neutral-900 dark:text-white">{sel.id}</span>
               </div>
             </div>
+            {/* 性能统计 */}
+            {(() => {
+              const agentHistory = getTaskHistory().filter(h => h.agentId === sel.id);
+              if (agentHistory.length === 0) return null;
+              const completed = agentHistory.filter(h => h.status === 'completed');
+              const failed = agentHistory.filter(h => h.status === 'failed');
+              const avgTime = completed.length > 0
+                ? completed.reduce((sum, h) => sum + ((h.endTime || 0) - h.startTime), 0) / completed.length / 1000
+                : 0;
+              return (
+                <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                  <h3 className="text-xs font-medium text-neutral-500 mb-2">性能统计</h3>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2">
+                      <div className="text-lg font-semibold text-green-500">{completed.length}</div>
+                      <div className="text-xs text-neutral-500">完成</div>
+                    </div>
+                    <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2">
+                      <div className="text-lg font-semibold text-red-500">{failed.length}</div>
+                      <div className="text-xs text-neutral-500">失败</div>
+                    </div>
+                    <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-2">
+                      <div className="text-lg font-semibold text-blue-500">{avgTime.toFixed(1)}s</div>
+                      <div className="text-xs text-neutral-500">平均耗时</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+            {/* 任务历史 */}
+            {getTaskHistory().filter(h => h.agentId === sel.id).length > 0 && (
+              <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                <h3 className="text-xs font-medium text-neutral-500 mb-2">最近任务</h3>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {getTaskHistory().filter(h => h.agentId === sel.id).slice(0, 5).map(h => (
+                    <div key={h.id} className="flex items-center gap-2 text-xs">
+                      <span className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        h.status === 'running' ? "bg-yellow-500" :
+                        h.status === 'completed' ? "bg-green-500" : "bg-red-500"
+                      )} />
+                      <span className="text-neutral-600 dark:text-neutral-400 truncate flex-1">{h.task}</span>
+                      <span className="text-neutral-400">{new Date(h.startTime).toLocaleTimeString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex gap-3 mt-6">
+              {/* 对话按钮：跳转到聊天 tab 并预填调度 prompt */}
+              <button
+                onClick={() => {
+                  setSel(null);
+                  onAgentChat?.({
+                    id: sel.id,
+                    name: sel.name,
+                    department: sel.department,
+                    departmentName: sel.departmentName,
+                    emoji: sel.emoji,
+                  });
+                }}
+                className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                💬 对话
+              </button>
               {getWorkingAgents().has(sel.id) ? (
                 <button onClick={() => stopTask(sel)} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
                   结束工作

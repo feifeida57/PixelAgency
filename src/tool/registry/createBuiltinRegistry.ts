@@ -1,5 +1,7 @@
 import type { BackgroundTaskRuntime } from "../../task/runtime/BackgroundTaskRuntime.js";
 import { createAgentTool, type CreateAgentToolOptions } from "../builtin/agent.js";
+import { createDispatchTool } from "../builtin/dispatch.js";
+import { createCollaborateTool } from "../builtin/collaborate.js";
 import { createAskUserQuestionTool } from "../builtin/askUserQuestion.js";
 import { createBashTool, type CreateBashToolOptions } from "../builtin/bash.js";
 import { createEditFileTool } from "../builtin/editFile.js";
@@ -102,6 +104,10 @@ export function createBuiltinRegistry(options?: CreateBuiltinRegistryOptions): T
   if (options?.agent !== false) {
     const agentOpts = options?.agent === true || options?.agent === undefined ? undefined : options.agent;
     registry.register(createAgentTool(agentOpts));
+    // 注册 dispatch 工具（部门 Agent 调度）
+    registry.register(createDispatchTool());
+    // 注册 collaborate 工具（跨部门协作）
+    registry.register(createCollaborateTool());
   }
   if (options?.backgroundTasks) {
     const runtime = options.backgroundTasks.runtime;

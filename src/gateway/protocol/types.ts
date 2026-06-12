@@ -367,4 +367,83 @@ export interface Gateway {
   skillImport?(input: SkillImportInput): Promise<SkillImportResult>;
   skillValidate?(input: SkillValidateInput): Promise<SkillValidationResult>;
   skillScan?(input: SkillScanInput): Promise<SkillScanResult>;
+
+  // 协作 API
+  collaborationListSessions?(): Promise<CollaborationListSessionsResult>;
+  collaborationGetSession?(input: CollaborationGetSessionInput): Promise<CollaborationGetSessionResult>;
+  collaborationCreateSession?(input: CollaborationCreateSessionInput): Promise<CollaborationCreateSessionResult>;
+  collaborationPostFinding?(input: CollaborationPostFindingInput): Promise<CollaborationPostFindingResult>;
+  collaborationCompleteSession?(input: CollaborationCompleteSessionInput): Promise<CollaborationCompleteSessionResult>;
 }
+
+// 协作 API 类型
+export type CollaborationListSessionsResult = {
+  sessions: Array<{
+    id: string;
+    topic: string;
+    participantCount: number;
+    findingCount: number;
+    phase: string;
+    createdAt: number;
+  }>;
+};
+
+export type CollaborationGetSessionInput = {
+  sessionId: string;
+};
+
+export type CollaborationGetSessionResult = {
+  session: {
+    id: string;
+    topic: string;
+    participants: Array<{
+      agentId: string;
+      agentRole: string;
+      department: string;
+      status: string;
+      joinedAt: number;
+    }>;
+    findings: Array<{
+      id: string;
+      agentId: string;
+      agentRole: string;
+      department: string;
+      content: string;
+      category: string;
+      timestamp: number;
+    }>;
+    phase: string;
+    createdAt: number;
+  } | null;
+};
+
+export type CollaborationCreateSessionInput = {
+  topic: string;
+};
+
+export type CollaborationCreateSessionResult = {
+  sessionId: string;
+  topic: string;
+};
+
+export type CollaborationPostFindingInput = {
+  sessionId: string;
+  agentId: string;
+  agentRole: string;
+  department: string;
+  content: string;
+  category?: string;
+};
+
+export type CollaborationPostFindingResult = {
+  findingId: string;
+  success: boolean;
+};
+
+export type CollaborationCompleteSessionInput = {
+  sessionId: string;
+};
+
+export type CollaborationCompleteSessionResult = {
+  success: boolean;
+};

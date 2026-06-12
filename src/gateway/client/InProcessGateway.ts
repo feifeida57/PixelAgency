@@ -569,6 +569,85 @@ export class InProcessGateway implements Gateway {
     return this.options.alwaysOnRerunPlan(input);
   }
 
+  // 协作 API 实现
+  async collaborationListSessions(): Promise<import("../protocol/types.js").CollaborationListSessionsResult> {
+    const { listActiveSessions } = await import("../../collaboration/index.js");
+    const sessions = listActiveSessions();
+    return {
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        topic: s.topic,
+        participantCount: s.participants.size,
+        findingCount: s.findings.length,
+        phase: s.phase,
+        createdAt: s.createdAt,
+      })),
+    };
+  }
+
+  async collaborationGetSession(input: import("../protocol/types.js").CollaborationGetSessionInput): Promise<import("../protocol/types.js").CollaborationGetSessionResult> {
+    const { getSession } = await import("../../collaboration/index.js");
+    const session = getSession(input.sessionId);
+    if (!session) {
+      return { session: null };
+    }
+    return {
+      session: {
+        id: session.id,
+        topic: session.topic,
+        participants: Array.from(session.participants.values()).map((p) => ({
+          agentId: p.agentId,
+          agentRole: p.agentRole,
+          department: p.department,
+          status: p.status,
+          joinedAt: p.joinedAt,
+        })),
+        findings: session.findings.map((f) => ({
+          id: f.id,
+          agentId: f.agentId,
+          agentRole: f.agentRole,
+          department: f.department,
+          content: f.content,
+          category: f.category,
+          timestamp: f.timestamp,
+        })),
+        phase: session.phase,
+        createdAt: session.createdAt,
+      },
+    };
+  }
+
+  async collaborationCreateSession(input: import("../protocol/types.js").CollaborationCreateSessionInput): Promise<import("../protocol/types.js").CollaborationCreateSessionResult> {
+    const { createSession } = await import("../../collaboration/index.js");
+    const session = createSession(input.topic);
+    return {
+      sessionId: session.id,
+      topic: session.topic,
+    };
+  }
+
+  async collaborationPostFinding(input: import("../protocol/types.js").CollaborationPostFindingInput): Promise<import("../protocol/types.js").CollaborationPostFindingResult> {
+    const { postFinding } = await import("../../collaboration/index.js");
+    const finding = postFinding(
+      input.sessionId,
+      input.agentId,
+      input.agentRole,
+      input.department,
+      input.content,
+      (input.category as any) || "analysis",
+    );
+    if (!finding) {
+      return { findingId: "", success: false };
+    }
+    return { findingId: finding.id, success: true };
+  }
+
+  async collaborationCompleteSession(input: import("../protocol/types.js").CollaborationCompleteSessionInput): Promise<import("../protocol/types.js").CollaborationCompleteSessionResult> {
+    const { completeSession } = await import("../../collaboration/index.js");
+    const success = completeSession(input.sessionId);
+    return { success };
+  }
+
   private requireCron(): GatewayCronController {
     if (!this.options.cron) {
       throw new Error("Cron runtime is not configured.");

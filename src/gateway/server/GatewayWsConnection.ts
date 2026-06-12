@@ -243,6 +243,31 @@ export class GatewayWsConnection {
           return this.options.gateway.alwaysOnRerunPlan(frame.params as never);
         }
         return Promise.resolve({ runId: "", error: { code: "not_configured", message: "Always-On rerun not available" } });
+      case "collaboration_list_sessions":
+        if (this.options.gateway.collaborationListSessions) {
+          return this.options.gateway.collaborationListSessions();
+        }
+        return Promise.resolve({ sessions: [] });
+      case "collaboration_get_session":
+        if (this.options.gateway.collaborationGetSession) {
+          return this.options.gateway.collaborationGetSession(frame.params as never);
+        }
+        return Promise.resolve({ session: null });
+      case "collaboration_create_session":
+        if (this.options.gateway.collaborationCreateSession) {
+          return this.options.gateway.collaborationCreateSession(frame.params as never);
+        }
+        return Promise.resolve({ sessionId: "", topic: "" });
+      case "collaboration_post_finding":
+        if (this.options.gateway.collaborationPostFinding) {
+          return this.options.gateway.collaborationPostFinding(frame.params as never);
+        }
+        return Promise.resolve({ findingId: "", success: false });
+      case "collaboration_complete_session":
+        if (this.options.gateway.collaborationCompleteSession) {
+          return this.options.gateway.collaborationCompleteSession(frame.params as never);
+        }
+        return Promise.resolve({ success: false });
       default:
         throw new Error(`Unknown gateway method ${(frame as { method?: string }).method}.`);
     }
