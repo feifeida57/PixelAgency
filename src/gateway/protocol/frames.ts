@@ -47,7 +47,12 @@ export type WsGatewayMethod =
   | "skill_validate"
   | "skill_scan"
   | "always_on_apply"
-  | "always_on_rerun_plan";
+  | "always_on_rerun_plan"
+  | "collaboration_list_sessions"
+  | "collaboration_get_session"
+  | "collaboration_create_session"
+  | "collaboration_post_finding"
+  | "collaboration_complete_session";
 
 export type WsRequestFrame = {
   type: "request";
